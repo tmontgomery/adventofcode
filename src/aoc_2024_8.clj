@@ -24,16 +24,39 @@
   (let [diff (clojure.core/map - node-1 node-2)
         [antinode-x antinode-y] (clojure.core/map + node-1 diff)]
     (when (not (nil? (get-in map [antinode-y antinode-x])))
-      [antinode-x antinode-y])))
+      #{[antinode-x antinode-y]})))
 
 (with-open [rdr (clojure.java.io/reader "/Users/tmont/Documents/AoC-2024/day-8-input.data")]
   (let [[tower-map map] (parse rdr)]
-    (- (count (reduce (fn [antinodes frequency]
-                      (reduce (fn [total [node-1 node-2]]
-                                (conj total (antinode map
-                                                      (get-in tower-map [frequency node-1])
-                                                      (get-in tower-map [frequency node-2]))))
-                              antinodes
-                              (all-pairs (get tower-map frequency))))
-                    #{}
-                    (keys tower-map))) 1)))
+    (count (reduce (fn [antinodes frequency]
+                     (reduce (fn [total [node-1 node-2]]
+                               (clojure.set/union total (antinode map
+                                                                  (get-in tower-map [frequency node-1])
+                                                                  (get-in tower-map [frequency node-2]))))
+                             antinodes
+                             (all-pairs (get tower-map frequency))))
+                   #{}
+                   (keys tower-map)))))
+
+(defn all-antinodes
+  [map node-1 node-2]
+  (let [diff (clojure.core/map - node-2 node-1)]
+    (loop [node node-1
+           results #{}]
+      (let [harmonic (clojure.core/map + node diff)]
+       (if (nil? (get-in map [(first harmonic) (second harmonic)]))
+         results
+         (recur harmonic
+                (conj results harmonic)))))))
+
+(with-open [rdr (clojure.java.io/reader "/Users/tmont/Documents/AoC-2024/day-8-input.data")]
+  (let [[tower-map map] (parse rdr)]
+    (count (reduce (fn [antinodes frequency]
+                     (reduce (fn [total [node-1 node-2]]
+                               (clojure.set/union total (all-antinodes map
+                                                                       (get-in tower-map [frequency node-1])
+                                                                       (get-in tower-map [frequency node-2]))))
+                             antinodes
+                             (all-pairs (get tower-map frequency))))
+                   #{}
+                   (keys tower-map)))))
