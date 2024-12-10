@@ -20,20 +20,17 @@
         (conj routes [x y])
         routes))
     #{}
-   [[(+ x -1) (+ y 0)]
-    [(+ x 0) (+ y 1)]
-    [(+ x 1) (+ y 0)]
-    [(+ x 0) (+ y -1)]]))
+    [[(+ x -1) (+ y 0)]
+     [(+ x 0) (+ y 1)]
+     [(+ x 1) (+ y 0)]
+     [(+ x 0) (+ y -1)]]))
 
 (defn num-routes
   [topo-map x y]
   (loop [height \1
          routes (possible-routes topo-map x y height)]
-    (println height routes)
     (if (= \9 height)
-      (do
-        (println x y (count routes))
-        (count routes))
+      (count routes)
       (recur (next-height height)
              (reduce
                (fn [res [x y]]
@@ -69,11 +66,8 @@
   [topo-map x y]
   (loop [height \1
          routes (possible-routes-2 topo-map x y height)]
-    (println height routes)
     (if (= \9 height)
-      (do
-        (println x y (count routes))
-        (count routes))
+      (count routes)
       (recur (next-height height)
              (reduce
                (fn [res [x y]]
