@@ -2,7 +2,11 @@
 
 (defn parse
   [rdr]
-  (clojure.string/split (clojure.string/trim-newline (slurp rdr)) #" "))
+  (reduce
+    (fn [arrangement stone]
+      (update arrangement stone (fnil inc 0)))
+    {}
+    (clojure.string/split (clojure.string/trim-newline (slurp rdr)) #" ")))
 
 (reverse (vec (range 5)))
 
@@ -25,26 +29,27 @@
     (fn [new-arrangement stone]
       (cond
         (= "0" stone)
-        (conj new-arrangement "1")
+        (update new-arrangement "1" (fnil + 0) (get arrangement stone))
 
         (even? (count stone))
         (-> new-arrangement
-            (conj (trim-leading-0s (subs stone 0 (int (/ (count stone) 2)))))
-            (conj (trim-leading-0s (subs stone (Math/ceil (/ (count stone) 2))))))
+            (update (trim-leading-0s (subs stone 0 (int (/ (count stone) 2)))) (fnil + 0) (get arrangement stone))
+            (update (trim-leading-0s (subs stone (Math/ceil (/ (count stone) 2)))) (fnil + 0) (get arrangement stone)))
 
         :else
-        (conj new-arrangement (str (* 2024 (Long/parseLong stone)))))
+        (update new-arrangement (str (* 2024 (Long/parseLong stone))) (fnil + 0) (get arrangement stone)))
       )
-    []
-    arrangement))
+    {}
+    (keys arrangement)))
 
 (time (with-open [rdr (clojure.java.io/reader "/Users/tmont/Documents/AoC-2024/day-11-input.txt")]
         (let [arrangement (parse rdr)]
           (println arrangement)
-          (count (loop [blinks 0
-                  arrangement arrangement]
-                   (println "blink" blinks)
-             (if (= blinks 25)
-               arrangement
-               (recur (inc blinks)
-                      (blink arrangement))))))))
+          (reduce +
+            (vals (loop [blinks 0
+                    arrangement arrangement]
+               (println "blink" blinks)
+               (if (= blinks 75)
+                 arrangement
+                 (recur (inc blinks)
+                        (blink arrangement)))))))))
