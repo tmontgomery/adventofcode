@@ -61,7 +61,7 @@
 (defn parse-2
   [rdr]
   (let [line (clojure.string/trim-newline (slurp rdr))
-        disk-map (int-array 50 unallocated)]
+        disk-map (int-array 100000 unallocated)]
     (loop [index 0
            id 0
            free? false
@@ -86,22 +86,70 @@
            0
            (for [offset (range 10)] (- offset)))))
 
-(defn is-big-enough?
-  [disk-map index length]
-  (every? #(= unallocated %)
-    (for [i (range length)]
-     (aget disk-map (+ index i)))))
-
 (defn find-free-blocks
-  [disk-map length max-index]
-  (loop [index 0]
-    (if (= index max-index)
+  [disk-map length min-index max-index]
+  (loop [index min-index
+         free-run 0]
+    #_(println index (aget disk-map index) free-run)
+    (cond
+      (= index max-index)
       -1
-      (if ((= unallocated (aget disk-map index)))
-        )))
-  )
 
-(time (with-open [rdr (clojure.java.io/reader "/Users/tmont/Documents/AoC-2024/day-9-test-input.txt")]
+      (and (= unallocated (aget disk-map index))
+           (= free-run (dec length)))
+      (- index free-run)
+
+      :else
+      (recur (inc index)
+             (if (= unallocated (aget disk-map index))
+               (inc free-run)
+               0)))))
+
+(defn swap-file
+  [disk-map from-index to-index length]
+  (println "swap-file" (aget disk-map from-index) from-index to-index length)
+  (loop [i 0]
+    (if (>= i length)
+      length
+      (do
+        (aset disk-map (+ to-index i) (aget disk-map (+ from-index i)))
+        (aset disk-map (+ from-index i) unallocated)
+        (recur (inc i))))))
+
+(defn compact
+  [disk-map length]
+  (loop [index (dec length)
+         min-index 0]
+    #_(println index (aget disk-map index))
+    (if (or (= (aget disk-map index) 0)
+         (>= min-index index))
+      0
+      (if (= unallocated (aget disk-map index))
+        (recur (dec index)
+               min-index)
+        (let [file-length (num-blocks-allocated disk-map index)
+              free-index (find-free-blocks disk-map file-length min-index index)]
+          (when (> free-index 0)
+            (swap-file disk-map (- index (dec file-length)) free-index file-length))
+          (recur (- index file-length)
+                 (if (= file-length 1)
+                   free-index
+                   min-index)))))))
+
+(defn checksum
+  [disk-map length]
+  (reduce
+    (fn [sum index]
+      (let [value (aget disk-map index)]
+        (if (>= value 0)
+          (+ sum (* index value))
+          sum)))
+    0
+    (range length)))
+
+(time (with-open [rdr (clojure.java.io/reader "/Users/tmont/Documents/AoC-2024/day-9-input.txt")]
         (let [[disk-map length] (parse-2 rdr)]
-          (println length (vec disk-map))
-          (println (num-blocks-allocated disk-map 25)))))
+          (println "length" length)
+          (compact disk-map length)
+          #_(vec disk-map)
+          (checksum disk-map length))))
