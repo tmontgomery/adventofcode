@@ -50,3 +50,58 @@
    (let [[disk-map file-info] (parse rdr)]
      (println (count disk-map) (dec (count file-info)))
      (compact-checksum (vec disk-map) file-info))))
+
+(def unallocated -1)
+
+(defn set-disk-map
+  [disk-map starting-index length value]
+  (doseq [index (range starting-index (+ starting-index length))]
+    (aset-int disk-map index value)))
+
+(defn parse-2
+  [rdr]
+  (let [line (clojure.string/trim-newline (slurp rdr))
+        disk-map (int-array 50 unallocated)]
+    (loop [index 0
+           id 0
+           free? false
+           disk-map-index 0]
+      (let [val (get line index)]
+        (if (nil? val)
+          [disk-map disk-map-index]
+          (do
+            (set-disk-map disk-map disk-map-index (- (int val) 48) (if free? unallocated id))
+            (recur (inc index)
+                  (if free? id (inc id))
+                  (if free? false true)
+                  (+ disk-map-index (- (int val) 48)))))))))
+
+(defn num-blocks-allocated
+  [disk-map index]
+  (let [id (aget disk-map index)]
+   (reduce (fn [length offset]
+             (if (not= id (aget disk-map (+ index offset)))
+               (reduced length)
+               (inc length)))
+           0
+           (for [offset (range 10)] (- offset)))))
+
+(defn is-big-enough?
+  [disk-map index length]
+  (every? #(= unallocated %)
+    (for [i (range length)]
+     (aget disk-map (+ index i)))))
+
+(defn find-free-blocks
+  [disk-map length max-index]
+  (loop [index 0]
+    (if (= index max-index)
+      -1
+      (if ((= unallocated (aget disk-map index)))
+        )))
+  )
+
+(time (with-open [rdr (clojure.java.io/reader "/Users/tmont/Documents/AoC-2024/day-9-test-input.txt")]
+        (let [[disk-map length] (parse-2 rdr)]
+          (println length (vec disk-map))
+          (println (num-blocks-allocated disk-map 25)))))
