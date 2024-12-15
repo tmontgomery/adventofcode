@@ -63,7 +63,6 @@
             (+ sum (num-fences plot-map x y (get-in plot-map [y x]))))
           0
           shape)]
-    (println (get-in plot-map (first shape)) fences (count shape))
     (* fences (count shape))))
 
 (defn all-shapes
@@ -81,5 +80,4 @@
 (time (with-open [rdr (clojure.java.io/reader "/Users/tmont/Documents/AoC-2024/day-12-input.txt")]
         (let [[plots plot-map] (parse rdr)
               shapes (all-shapes plots plot-map)]
-          (println shapes)
           (reduce #(+ %1 (price plot-map %2)) 0 shapes))))
